@@ -53,6 +53,54 @@ def adjusted_homophily(G: nx.Graph):
         return 0.0
     return (edge_homophily(G) - s) / (1 - s)
 
+def unbiased_homophily(G: nx.Graph, alpha : float): 
+
+    labels = set(nx.get_node_attributes(G, "label").values())
+    res = 0.0
+    c_ii = {}
+    c_ij = {}
+
+    """ calcul des cii """
+    for u,v in G.edges() : 
+        i = G.nodes[u]["label"]
+        j = G.nodes[v]["label"]
+
+        if i == j : 
+            if i in c_ii : 
+                c_ii[i] += 1
+            else : 
+                c_ii[i] = 1
+
+        else : 
+            if (i,j) in c_ij : 
+                c_ij[(i,j)] += 1
+            else : 
+                c_ij[(i,j)] = 1
+
+    num_edges = G.number_of_edges()
+    if num_edges == 0 : 
+        return 0.0
+
+    c_ii = {i : c_ii[i] / num_edges for i in c_ii}
+    c_ij = {(i,j) : c_ij[(i,j)] / num_edges for (i,j) in c_ij}
+
+    numerator = 0.0
+    denominator = 0.0
+
+    for i in labels : 
+        for j in labels : 
+            if i < j :
+                numerator += math.sqrt(c_ii[i]*c_ii[j]) - c_ij[(i,j)]
+                denominator += math.sqrt(c_ii[i]*c_ii[j]) + c_ij[(i,j)]
+
+    part1 = (numerator/denominator) if denominator != 0 else 0.0
+
+    sum_cii = sum(math.sqrt(c_ii[i] for i in labels))
+    part2 = alpha * min(sum_cii,1)
+
+    res = part1 + part2
+
+    return res
 G1 = nx.Graph()
 G1.add_nodes_from([
     ("A", {"label": 0}),
