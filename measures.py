@@ -101,6 +101,8 @@ def unbiased_homophily(G: nx.Graph, alpha : float):
     res = part1 + part2
 
     return res
+
+
 G1 = nx.Graph()
 G1.add_nodes_from([
     ("A", {"label": 0}),
