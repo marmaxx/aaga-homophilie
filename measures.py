@@ -53,14 +53,15 @@ def adjusted_homophily(G: nx.Graph):
         return 0.0
     return (edge_homophily(G) - s) / (1 - s)
 
-def unbiased_homophily(G: nx.Graph, alpha : float): 
+def unbiased_homophily_alpha(G: nx.Graph, alpha : float): 
+    """ formule (2) de l'article """
 
     labels = set(nx.get_node_attributes(G, "label").values())
     res = 0.0
     c_ii = {}
     c_ij = {}
 
-    """ calcul des cii """
+    """ calcul des c_ii et c_ij"""
     for u,v in G.edges() : 
         i = G.nodes[u]["label"]
         j = G.nodes[v]["label"]
@@ -101,6 +102,35 @@ def unbiased_homophily(G: nx.Graph, alpha : float):
     res = part1 + part2
 
     return res
+
+
+def unbiased_homophily(G: nx.Graph): 
+    """ formule (4) de l'article """
+    
+    h_unb = 0.0
+
+    numerator = 0.0
+    denominator = 0.0 
+
+    labels = set(nx.get_node_attributes(G, "label").values())
+
+    """ calcul des c_ii"""
+    for u,v in G.edges() : 
+        i = G.nodes[u]["label"]
+        j = G.nodes[v]["label"]
+
+        if i == j : 
+            if i in c_ii : 
+                c_ii[i] += 1
+            else : 
+                c_ii[i] = 1
+
+    numerator = math.pow(sum(math.sqrt(c_ii[i]) for i in labels), 2) - 1
+    denominator = math.pow(sum(math.sqrt(c_ii[i]) for i in labels), 2) + 1 - 2 * sum(c_ii[i] for i in labels)
+
+    h_unb = (numerator/denominator) if denominator != 0 else 0.0
+
+    return h_unb
 
 
 G1 = nx.Graph()
