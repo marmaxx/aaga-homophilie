@@ -132,6 +132,7 @@ def unbiased_homophily(G: nx.Graph):
 
     return h_unb
 
+"""------------------------------------ TESTS ------------------------------------------"""
 
 G1 = nx.Graph()
 G1.add_nodes_from([
@@ -158,6 +159,49 @@ G2.add_edges_from([
     ("A", "B"),
     ("B", "D"),
 ])
+
+def file_to_graphs(file_path) : 
+    """"""
+    graphs = {}
+
+    files_source_path = file_path + file_path[8:]
+
+    j = 0
+    node_labels = {}
+    with open(files_source_path + "_node_labels.txt", "r", encoding="utf-8") as file :
+        for label in file :
+            node_labels[j] = int(label)
+            j += 1
+
+    i = 0
+    node_graph = {}
+    print(files_source_path + "_graph_indicator.txt")
+    with open(files_source_path + "_graph_indicator.txt", "r", encoding="utf-8") as file :
+        for graph in file : 
+            
+            if graph not in graphs :
+                node_graph[i] = nx.Graph(name = graph)
+                graphs[graph] = node_graph[i]
+
+            else : 
+                node_graph[i] = graphs[graph]
+
+            graphs[graph].add_node(str(i), label = node_labels[i])
+
+            i += 1
+
+    with open(files_source_path + "_A.txt", "r", encoding="utf-8") as file :
+        for edge in file : =
+            nodes = edge.split(", ")
+            graph = node_graph[int(nodes[0])]
+
+            graphs[graph.name].add_edge(nodes[0],nodes[1])
+
+    return graphs
+
+
+Graphs_of_Mutag = file_to_graphs("datasets/MUTAG")
+Graphs_of_Proteins = file_to_graphs("datasets/PROTEINS")
 
 for name, measure in {
     "edge": edge_homophily,
