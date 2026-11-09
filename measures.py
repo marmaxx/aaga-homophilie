@@ -164,5 +164,7 @@ for name, measure in {
     "node": node_homophily,
     "class": class_homophily,
     "adjusted": adjusted_homophily,
+    "unbiased_homophily_alpha" : unbiased_homophily_alpha,
+    "unbiased_homophily" : unbiased_homophily
 }.items():
     print(name, measure(G1), measure(G2))
