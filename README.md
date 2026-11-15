@@ -1,22 +1,50 @@
-**Projet : Revisiter les mesures d’homophilie**
+# Projet : Revisiting Graph Homophily Measures
 
-*Présentation du projet:*
+Ce projet implémente et évalue les mesures d'homophilie de graphes présentées dans l'article :
+> **Mikhail Mironov and Liudmila Prokhorenkova**, *Revisiting Graph Homophily Measures*, Proceedings of the Third Learning on Graphs Conference (LoG 2024), PMLR 269.
 
-L’homophilie désigne la tendance des nœuds d’un graphe à être reliés à d’autres nœuds qui leur ressemblent. Plusieurs mesures permettent de quantifier cette propriété, mais elles présentent certaines limites, notamment lorsqu’il s’agit de comparer des graphes ayant des nombres de classes ou des répartitions de classes différents.
+---
 
-L’objectif de ce projet est d’implémenter les mesures d’homophilie présentées dans l’article Revisiting Graph Homophily Measures de Mikhail Mironov et Liudmila Prokhorenkova, puis de reproduire une partie des expériences proposées dans cet article sur de nouveaux jeux de données.
+## 1. Structure du projet
 
-Le projet utilise notamment le jeu de données NCI1 afin de comparer les mesures et d’étudier leurs résultats.
+* **`measures.py`** : Définition des 6 mesures d'homophilie :
+  * $h_{edge}$ (`edge_homophily`)
+  * $h_{node}$ (`node_homophily`)
+  * $h_{class}$ (`class_homophily`)
+  * $h_{adj}$ (`adjusted_homophily`)
+  * $h_{unb}$ (`unbiased_homophily`, formule 4 rapide, $\alpha = 0$)
+  * $h_{unb}^\alpha$ (`unbiased_homophily_alpha`, formule 2 générale)
+* **`agreement_matrix.py`** : Chargement des graphes, gestion des paires et calcul des matrices d'accord complètes dans le répertoire `results/`.
+* **`table_5_comparison.py`** : Calcul du tableau comparatif des moyennes d'homophilie (Section 6, Tableau 5) dans `results/`.
 
-*Installation et exécution:*
+---
 
-1. Installer les dépendances
-   Python 3 doit être installé. Depuis un terminal ouvert dans le dossier du projet, exécuter :
-   python3 -m pip install networkx pandas torch torch-geometric
-2. Lancer le projet
-   Exécuter les deux scripts dans l’ordre :
-   python3 prepare_nci1.py
-   python3 measures.py
+## 2. Installation et exécution
+
+### Dépendances requises
+```bash
+pip install networkx pandas numpy torch torch-geometric
+```
+
+### Exécution rapide (tout en un)
+```bash
+./run.sh
+```
+
+### Exécution détaillée des scripts
+
+1. **Calcul des matrices d'accord complètes (Section 3 & Annexe B) :**
+   ```bash
    python3 agreement_matrix.py
+   ```
+   Ce script traite automatiquement **NCI1**, **MUTAG**, **PROTEINS** et **Synthetic SBM**, puis enregistre les matrices dans `results/` :
+   * `results/agreement_matrix_nci1.csv`
+   * `results/agreement_matrix_mutag.csv`
+   * `results/agreement_matrix_proteins.csv`
+   * `results/agreement_matrix_synthetic.csv`
 
-Le premier script charge le jeu de données NCI1 et prépare les paires de graphes, le second calcule les mesures d’homophilie et le dernier génère la matrice des pourcentages d’accord entre elles.
+2. **Génération du Tableau 5 comparatif (Section 6) :**
+   ```bash
+   python3 table_5_comparison.py
+   ```
+   Génère `results/table_5.csv` avec les moyennes et écart-types sur l'ensemble des jeux de données.

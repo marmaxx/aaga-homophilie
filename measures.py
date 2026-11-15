@@ -1,15 +1,22 @@
-import networkx as nx
+import os
 import math
+import networkx as nx
 
+"""
+Implémentation des 6 différents mesures d'homophilie présentes dans l'article.
+"""
+
+# Mesure d'homophilie des arêtes
 def edge_homophily(G: nx.Graph):
     if G.number_of_edges() == 0:
         return 0.0
     res = 0.0
-    for u,v in G.edges:
+    for u, v in G.edges:
         if G.nodes[u]["label"] == G.nodes[v]["label"]:
             res += 1
     return res / G.number_of_edges()
 
+# Mesure d'homophilie des noeuds
 def node_homophily(G: nx.Graph):
     res = 0.0
     count = 0
@@ -23,6 +30,7 @@ def node_homophily(G: nx.Graph):
         return 0.0
     return res / count if count != 0 else 0.0
 
+# Mesure d'homophilie des classes
 def class_homophily(G: nx.Graph):
     labels = set(nx.get_node_attributes(G, "label").values())
     if len(labels) < 2 or G.number_of_nodes() == 0:
@@ -43,21 +51,23 @@ def class_homophily(G: nx.Graph):
             res += max(s / label_degree - label_size / n, 0)
     return res / (len(labels) - 1)
 
+# Mesure d'homophilie ajustée
 def adjusted_homophily(G: nx.Graph):
     if G.number_of_edges() == 0:
         return 0.0
     labels = set(nx.get_node_attributes(G, "label").values())
     if len(labels) < 2 or G.number_of_nodes() == 0:
-            return 0.0
+        return 0.0
     s = 0.0
     for l in labels:
         label_degree = sum(G.degree(v) for v in G.nodes() if G.nodes[v]["label"] == l)
-        s += (label_degree  / (2 * G.number_of_edges())) ** 2
+        s += (label_degree / (2 * G.number_of_edges())) ** 2
     if s == 1:
         return 0.0
     return (edge_homophily(G) - s) / (1 - s)
 
-def unbiased_homophily_alpha(G: nx.Graph, alpha: float):
+# Mesure d'homophilie non biaisée avec paramètre alpha
+def unbiased_homophily_alpha(G: nx.Graph, alpha: float = 0.0):
     labels = sorted(set(nx.get_node_attributes(G, "label").values()))
 
     if len(labels) < 2 or G.number_of_edges() == 0:
@@ -79,7 +89,7 @@ def unbiased_homophily_alpha(G: nx.Graph, alpha: float):
     m = G.number_of_edges()
 
     c_ii = {i: c_ii.get(i, 0) / m for i in labels}
-    c_ij = {pair: value / m for pair, value in c_ij.items()}
+    c_ij = {pair: value / (2 * m) for pair, value in c_ij.items()}
 
     numerator = 0.0
     denominator = 0.0
@@ -87,9 +97,7 @@ def unbiased_homophily_alpha(G: nx.Graph, alpha: float):
     for index, i in enumerate(labels):
         for j in labels[index + 1:]:
             cross = c_ij.get((i, j), 0)
-
             product = math.sqrt(c_ii[i] * c_ii[j])
-
             numerator += product - cross
             denominator += product + cross
 
@@ -100,10 +108,9 @@ def unbiased_homophily_alpha(G: nx.Graph, alpha: float):
 
     return part1 + part2
 
-
+# Mesure d'homophilie non biaisée 
 def unbiased_homophily(G: nx.Graph):
     labels = set(nx.get_node_attributes(G, "label").values())
-
     m = G.number_of_edges()
 
     if len(labels) < 2 or m == 0:
@@ -114,150 +121,62 @@ def unbiased_homophily(G: nx.Graph):
     for u, v in G.edges():
         i = G.nodes[u]["label"]
         j = G.nodes[v]["label"]
-
         if i == j:
             c_ii[i] += 1
 
     c_ii = {i: c_ii[i] / m for i in labels}
-
     sum_sqrt = sum(math.sqrt(c_ii[i]) for i in labels)
 
     numerator = sum_sqrt ** 2 - 1
+    denominator = sum_sqrt ** 2 + 1 - 2 * sum(c_ii.values())
 
-    denominator = (sum_sqrt ** 2 + 1 - 2 * sum(c_ii.values()))
+    if denominator == 0:
+        return 0.0
 
-    return numerator / denominator if denominator != 0 else 0.0
+    return numerator / denominator
 
-G1 = nx.Graph()
-G1.add_nodes_from([
-    ("A", {"label": 0}),
-    ("B", {"label": 0}),
-    ("C", {"label": 1}),
-    ("D", {"label": 1}),
-])
-G1.add_edges_from([
-    ("A", "B"),
-    ("C", "D"),
-    ("B", "C"),
-])
+# Tests des mesures sur deux graphes simples G1 et G2
+if __name__ == "__main__":
+    G1 = nx.Graph()
+    G1.add_nodes_from([
+        ("A", {"label": 0}),
+        ("B", {"label": 0}),
+        ("C", {"label": 1}),
+        ("D", {"label": 1}),
+    ])
+    G1.add_edges_from([
+        ("A", "B"),
+        ("C", "D"),
+        ("B", "C"),
+    ])
 
-G2 = nx.Graph()
-G2.add_nodes_from([
-    ("A", {"label": 0}),
-    ("B", {"label": 0}),
-    ("C", {"label": 1}),
-    ("D", {"label": 1}),
-])
-G2.add_edges_from([
-    ("A", "C"),
-    ("A", "B"),
-    ("B", "D"),
-])
+    G2 = nx.Graph()
+    G2.add_nodes_from([
+        ("A", {"label": 0}),
+        ("B", {"label": 0}),
+        ("C", {"label": 1}),
+        ("D", {"label": 1}),
+    ])
+    G2.add_edges_from([
+        ("A", "C"),
+        ("A", "B"),
+        ("B", "D"),
+    ])
 
+    test_measures = {
+        "edge": edge_homophily,
+        "node": node_homophily,
+        "class": class_homophily,
+        "adjusted": adjusted_homophily,
+        "unbiased_homophily": unbiased_homophily,
+    }
 
-import os
-import networkx as nx
+    print("Test sur G1 et G2 :")
+    for name, measure in test_measures.items():
+        print(f"  {name:20s}  G1: {measure(G1):.4f} | G2: {measure(G2):.4f}")
 
-
-def file_to_graphs(file_path):
-    graphs = {}
-
-    dataset_name = os.path.basename(os.path.normpath(file_path))
-    files_source_path = os.path.join(file_path, dataset_name)
-
-    node_labels = {}
-
-    with open(
-        files_source_path + "_node_labels.txt",
-        "r",
-        encoding="utf-8"
-    ) as file:
-
-        for i, label in enumerate(file, start=1):
-            node_labels[i] = int(label.strip())
-
-    node_graph = {}
-
-    with open(
-        files_source_path + "_graph_indicator.txt",
-        "r",
-        encoding="utf-8"
-    ) as file:
-
-        for i, graph_id in enumerate(file, start=1):
-
-            graph_id = graph_id.strip()
-
-            if graph_id not in graphs:
-                graphs[graph_id] = nx.Graph(name=graph_id)
-
-            node_graph[i] = graph_id
-
-            graphs[graph_id].add_node(
-                str(i),
-                label=node_labels[i]
-            )
-
-    with open(
-        files_source_path + "_A.txt",
-        "r",
-        encoding="utf-8"
-    ) as file:
-
-        for edge in file:
-
-            nodes = edge.strip().split(",")
-
-            u = nodes[0].strip()
-            v = nodes[1].strip()
-
-            u_id = int(u)
-            v_id = int(v)
-
-            graph_id = node_graph[u_id]
-
-            if node_graph[v_id] != graph_id:
-                raise ValueError(
-                    f"Arête entre deux graphes différents : {u}, {v}"
-                )
-
-            graphs[graph_id].add_edge(u, v)
-
-    return graphs
-
-Graphs_of_Mutag = file_to_graphs("datasets/MUTAG")
-
-Graphs_of_Proteins = file_to_graphs("datasets/PROTEINS")
-
-
-print("Nombre de graphes MUTAG :", len(Graphs_of_Mutag))
-print("Nombre de graphes PROTEINS :", len(Graphs_of_Proteins))
-
-for graph_id, G in list(Graphs_of_Mutag.items())[:3]:
-
-    print(
-        f"Graphe {graph_id} : "
-        f"{G.number_of_nodes()} nœuds, "
-        f"{G.number_of_edges()} arêtes"
-    )
-
-
-Graphs_of_Mutag = file_to_graphs("datasets/MUTAG")
-Graphs_of_Proteins = file_to_graphs("datasets/PROTEINS")
-
-measures = {
-    "edge": edge_homophily,
-    "node": node_homophily,
-    "class": class_homophily,
-    "adjusted": adjusted_homophily,
-    "unbiased_homophily" : unbiased_homophily
-}
-
-for name, measure in measures.items():
-    print(name, measure(G1), measure(G2))
-
-alpha = 0.5
-
-print("unbiased_homophily_alpha",
-      unbiased_homophily_alpha(G1, alpha),
-      unbiased_homophily_alpha(G2, alpha))
+    alpha = 0.5
+    print("  unbiased_alpha (0.5)  G1:", round(unbiased_homophily_alpha(G1, alpha), 4),
+          "| G2:", round(unbiased_homophily_alpha(G2, alpha), 4))
+    print("  unbiased_alpha (0.0)  G1:", round(unbiased_homophily_alpha(G1, 0.0), 4),
+          "| G2:", round(unbiased_homophily_alpha(G2, 0.0), 4))
